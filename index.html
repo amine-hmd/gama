@@ -3,35 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prendre une photo</title>
+    <title>Prendre et envoyer une photo</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            margin-top: 50px;
-        }
-        canvas {
-            border: 2px solid #333;
-            border-radius: 8px;
-            margin-top: 20px;
-        }
-        button {
-            padding: 10px 20px;
-            font-size: 16px;
-            background-color: #006400;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #004d00;
-        }
+        body { text-align: center; font-family: Arial; margin-top: 50px; }
+        canvas { border: 1px solid #333; margin-top: 20px; }
+        button { padding: 10px 20px; font-size: 16px; background-color: #006400; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background-color: #004d00; }
     </style>
 </head>
 <body>
-    <h1>Prendre une photo</h1>
-    <button id="snap">Prendre une photo</button>
+    <h1>Prendre et envoyer une photo</h1>
+    <button id="snap">Prendre la photo</button>
     <br>
     <canvas id="canvas" width="640" height="480"></canvas>
 
@@ -42,30 +24,36 @@
 
         let stream;
 
-        // Préparer la caméra en arrière-plan
         async function setupCamera() {
-            try {
-                stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                // On crée un élément vidéo caché
-                const video = document.createElement('video');
-                video.srcObject = stream;
-                video.play();
-
-                return video;
-            } catch (err) {
-                alert("Impossible d'accéder à la caméra : " + err);
-            }
+            stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            const video = document.createElement('video');
+            video.srcObject = stream;
+            video.play();
+            return video;
         }
 
         snap.addEventListener('click', async () => {
             const video = await setupCamera();
-
-            // On attend que la vidéo soit prête
-            video.addEventListener('loadeddata', () => {
-                // On capture l'image dans le canvas
+            video.addEventListener('loadeddata', async () => {
+                // Prendre la photo
                 context.drawImage(video, 0, 0, canvas.width, canvas.height);
-                // On arrête le flux pour libérer la caméra
+                // Stopper la caméra
                 stream.getTracks().forEach(track => track.stop());
+
+                // Convertir le canvas en base64
+                const imageData = canvas.toDataURL('image/png');
+
+                // Envoyer la photo au serveur
+                const formData = new FormData();
+                formData.append('photo', imageData);
+
+                fetch('upload.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.text())
+                .then(data => alert(data))
+                .catch(err => alert('Erreur: ' + err));
             }, { once: true });
         });
     </script>
