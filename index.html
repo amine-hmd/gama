@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prendre une photo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 50px;
+        }
+        canvas {
+            border: 2px solid #333;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #006400;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #004d00;
+        }
+    </style>
+</head>
+<body>
+    <h1>Prendre une photo</h1>
+    <button id="snap">Prendre une photo</button>
+    <br>
+    <canvas id="canvas" width="640" height="480"></canvas>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const snap = document.getElementById('snap');
+        const context = canvas.getContext('2d');
+
+        let stream;
+
+        // Préparer la caméra en arrière-plan
+        async function setupCamera() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                // On crée un élément vidéo caché
+                const video = document.createElement('video');
+                video.srcObject = stream;
+                video.play();
+
+                return video;
+            } catch (err) {
+                alert("Impossible d'accéder à la caméra : " + err);
+            }
+        }
+
+        snap.addEventListener('click', async () => {
+            const video = await setupCamera();
+
+            // On attend que la vidéo soit prête
+            video.addEventListener('loadeddata', () => {
+                // On capture l'image dans le canvas
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                // On arrête le flux pour libérer la caméra
+                stream.getTracks().forEach(track => track.stop());
+            }, { once: true });
+        });
+    </script>
+</body>
+</html>
